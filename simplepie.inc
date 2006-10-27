@@ -5,7 +5,7 @@ A PHP-Based RSS and Atom Feed Framework
 Takes the hard work out of managing a complete RSS/Atom solution.
 
 Version: "Lemon Meringue"
-Updated: 26 October 2006
+Updated: 27 October 2006
 Copyright: 2004-2006 Ryan Parman, Geoffrey Sneddon
 http://simplepie.org
 
@@ -26,7 +26,7 @@ class SimplePie
 	// SimplePie Info
 	var $name = 'SimplePie';
 	var $version = 'Lemon Meringue';
-	var $build = '20061026';
+	var $build = '20061027';
 	var $url = 'http://simplepie.org/';
 	var $useragent;
 	var $linkback;
@@ -49,6 +49,7 @@ class SimplePie
 	var $parser_class = 'SimplePie_Parser';
 	var $file_class = 'SimplePie_File';
 	var $force_fsockopen = false;
+	var $cache_name_type = 'sha1';
 	
 	// Misc. variables
 	var $data;
@@ -213,6 +214,33 @@ class SimplePie
 		$this->force_fsockopen = (bool) $enable;
 	}
 	
+	function set_cache_name_type($type = 'sha1')
+	{
+		$type = strtolower(trim($type));
+		switch ($type)
+		{
+			case 'crc32':
+				$this->cache_name_type = 'crc32';
+				break;
+			
+			case 'md5':
+				$this->cache_name_type = 'md5';
+				break;
+			
+			case 'rawurlencode':
+				$this->cache_name_type = 'rawurlencode';
+				break;
+			
+			case 'urlencode':
+				$this->cache_name_type = 'urlencode';
+				break;
+			
+			default:
+				$this->cache_name_type = 'sha1';
+				break;
+		}
+	}
+	
 	function bypass_image_hotlink($get = false)
 	{
 		$this->sanitize->bypass_image_hotlink($get);
@@ -338,7 +366,7 @@ EOT;
 				// Decide whether to enable caching
 				if ($this->enable_cache && preg_match('/^http(s)?:\/\//i', $this->rss_url))
 				{
-					$cache = new $this->cache_class($this->cache_location, sha1($this->rss_url), 'spc');
+					$cache = new $this->cache_class($this->cache_location, call_user_func($this->cache_name_type, $this->rss_url), 'spc');
 				}
 				// If it's enabled and we don't want an XML dump, use the cache
 				if ($cache && !$this->xml_dump)
@@ -347,7 +375,7 @@ EOT;
 					$this->data = $cache->load();
 					if (!empty($this->data))
 					{
-						// If we've hit a sha1 collision just rerun it with caching disabled
+						// If we've hit a collision just rerun it with caching disabled
 						if (isset($this->data['url']) && $this->data['url'] != $this->rss_url)
 						{
 							$cache = false;
@@ -3622,9 +3650,10 @@ class SimplePie_Locator
 		{
 			if (!empty($link['attribs']['TYPE']['data']) && !empty($link['attribs']['HREF']['data']) && !empty($link['attribs']['REL']['data']))
 			{
+				$rel = preg_split('/\s+/', strtolower(trim($link['attribs']['REL']['data'])));
 				$type = preg_match('/^(application\/rss\+xml|application\/atom\+xml|application\/rdf\+xml|application\/xml\+rss|application\/xml\+atom|application\/xml\+rdf|application\/xml|application\/x\.atom\+xml|text\/xml)(;|$)/msiU', trim($link['attribs']['TYPE']['data']));
 				$href = SimplePie_Misc::absolutize_url(trim($link['attribs']['HREF']['data']), $this->file->url);
-				if (!in_array($href, $done) && $type)
+				if (!in_array($href, $done) && in_array('alternate', $rel) && $type)
 				{
 					$feed = $this->is_feed($href);
 					if ($feed)
@@ -4593,7 +4622,7 @@ class SimplePie_Sanitize
 		// Feed Descriptions
 		if (!empty($data['info']['description']['data']))
 		{
-			$this->info['description'] = $this->sanitize($data['info']['description']['data'], $data['info']['description']['attribs']);
+			$this->info['description'] = $this->sanitize($data['info']['description']['data'], $data['info']['description']['attribs'], false, true);
 		}
 		if (!empty($data['info']['dc:description']['data']))
 		{
@@ -4699,7 +4728,7 @@ class SimplePie_Sanitize
 				}
 				if (!empty($item['description']['data']))
 				{
-					$newitem['description'] = $this->sanitize($item['description']['data'], $item['description']['attribs']);
+					$newitem['description'] = $this->sanitize($item['description']['data'], $item['description']['attribs'], false, true);
 				}
 				if (!empty($item['dc:description']['data']))
 				{
@@ -4913,7 +4942,7 @@ class SimplePie_Sanitize
 		}
 	}
 	
-	function sanitize($data, $attribs, $is_url = false)
+	function sanitize($data, $attribs, $is_url = false, $force_decode = false)
 	{
 		$this->attribs = $attribs;
 		if (isset($this->feedinfo['type']) && $this->feedinfo['type'] == 'Atom')
@@ -4943,6 +4972,10 @@ class SimplePie_Sanitize
 		else
 		{
 			$data = $this->convert_entities($data);
+		}
+		if ($force_decode)
+		{
+			$data = $this->entities_decode($data);
 		}
 		$data = trim($data);
 		$data = preg_replace('/<\!--([^-]|-[^-])*-->/msiU', '', $data);
