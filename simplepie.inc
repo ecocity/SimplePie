@@ -5,7 +5,7 @@ A PHP-Based RSS and Atom Feed Framework
 Takes the hard work out of managing a complete RSS/Atom solution.
 
 Version: "Lemon Meringue"
-Updated: 27 October 2006
+Updated: 28 October 2006
 Copyright: 2004-2006 Ryan Parman, Geoffrey Sneddon
 http://simplepie.org
 
@@ -26,7 +26,7 @@ class SimplePie
 	// SimplePie Info
 	var $name = 'SimplePie';
 	var $version = 'Lemon Meringue';
-	var $build = '20061027';
+	var $build = '20061028';
 	var $url = 'http://simplepie.org/';
 	var $useragent;
 	var $linkback;
@@ -381,7 +381,7 @@ EOT;
 							$cache = false;
 						}
 						// If we've got a feed_url stored (if the page isn't actually a feed, or is a redirect) use that URL
-						else if (!empty($this->data['feed_url']))
+						else if (!empty($this->data['feed_url']) && $this->data['feed_url'] != $this->data['url'])
 						{
 							$this->feed_url($this->data['feed_url']);
 							return $this->init();
