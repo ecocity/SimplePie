@@ -381,10 +381,17 @@ EOT;
 							$cache = false;
 						}
 						// If we've got a feed_url stored (if the page isn't actually a feed, or is a redirect) use that URL
-						else if (!empty($this->data['feed_url']) && $this->data['feed_url'] != $this->data['url'])
+						else if (!empty($this->data['feed_url']))
 						{
-							$this->feed_url($this->data['feed_url']);
-							return $this->init();
+							if ($this->data['feed_url'] == $this->data['url'])
+							{
+								$cache->unlink();
+							}
+							else
+							{
+								$this->set_feed_url($this->data['feed_url']);
+								return $this->init();
+							}
 						}
 						// If the cache is new enough
 						else if ($cache->mtime() + $this->max_minutes * 60 < time())
@@ -411,7 +418,10 @@ EOT;
 										return true;
 									}
 								}
-								unset($file);
+								else
+								{
+									unset($file);
+								}
 							}
 							// If we don't have last-modified or etag set, just clear the cache
 							else
