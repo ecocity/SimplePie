@@ -5,7 +5,9 @@ include_once('../idn/idna_convert.class.php');
 header('Content-type:text/plain; charset=utf-8');
 
 if (isset($_GET['feed']) && !empty($_GET['feed'])) {
-	$request = new SimplePie_File($_GET['feed'], 10, 5, null, null, false);
+	$fsockopen = (isset($_GET['fsockopen'])) ? true:false;
+	
+	$request = new SimplePie_File($_GET['feed'], 10, 5, null, null, $fsockopen);
 	echo 'CURL: ' . SimplePie_Misc::get_curl_version();
 	echo "\r\n\r\n";
 	echo $request->method;
