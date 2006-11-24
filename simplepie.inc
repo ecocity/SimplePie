@@ -5,7 +5,7 @@ A PHP-Based RSS and Atom Feed Framework
 Takes the hard work out of managing a complete RSS/Atom solution.
 
 Version: "Lemon Meringue"
-Updated: 3 November 2006
+Updated: 24 November 2006
 Copyright: 2004-2006 Ryan Parman, Geoffrey Sneddon
 http://simplepie.org
 
@@ -25,8 +25,8 @@ class SimplePie
 {
 	// SimplePie Info
 	var $name = 'SimplePie';
-	var $version = '1.0 b3.1';
-	var $build = '20061103';
+	var $version = '1.0 b3.2';
+	var $build = '20061124';
 	var $url = 'http://simplepie.org/';
 	var $useragent;
 	var $linkback;
@@ -3782,7 +3782,7 @@ class SimplePie_Parser
 	var $attribs;
 	var $is_first;
 	var $inside_author;
-	
+	var $depth_inside_item = 0;
 		
 	function SimplePie_Parser($data, $encoding, $return_xml = false)
 	{
@@ -3939,6 +3939,12 @@ class SimplePie_Parser
 		$this->tag_name = $name;
 		$this->attribs = $attribs;
 		$this->is_first = true;
+
+		if ($this->inside_item)
+		{
+			$this->depth_inside_item++;
+		}
+
 		switch ($this->tag_name)
 		{
 			case 'ITEM':
@@ -4001,7 +4007,7 @@ class SimplePie_Parser
 
 	function data_handler($parser, $data)
 	{
-		if ($this->inside_item)
+		if ($this->inside_item && $this->depth_inside_item == 1)
 		{
 			switch ($this->tag_name)
 			{
@@ -4315,6 +4321,10 @@ class SimplePie_Parser
 					$this->link_number++;
 				}
 				break;
+		}
+		if ($this->inside_item)
+		{
+			$this->depth_inside_item--;
 		}
 	}
 	
