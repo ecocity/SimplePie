@@ -423,11 +423,6 @@ EOT;
 									unset($file);
 								}
 							}
-							// If we don't have last-modified or etag set, just clear the cache
-							else
-							{
-								$cache->unlink();
-							}
 						}
 						// If the cache is still valid, just return true
 						else
@@ -441,7 +436,6 @@ EOT;
 						$cache->unlink();
 					}
 				}
-				$this->data = array();
 				// If we don't already have the file (it'll only exist if we've opened it to check if the cache has been modified), open it.
 				if (!isset($file))
 				{
@@ -458,8 +452,15 @@ EOT;
 				if (!$file->success)
 				{
 					$this->error = $file->error;
-					return false;
-				}
+					if (!empty($this->data))
+					{
+						return true;
+					}
+					else
+					{
+						return false;
+					}
+ 				}
 				
 				// Check if the supplied URL is a feed, if it isn't, look for it.
 				$locate = new $this->locator_class($file, $this->timeout, $this->useragent);
@@ -575,6 +576,10 @@ EOT;
 				// Parse the data, and make it sane
 				$this->sanitize->parse_data_array($data->data, $this->rss_url);
 				unset($data);
+
+				// Make sure the data array is empty
+				$this->data = array();
+
 				// Get the sane data
 				$this->data['feedinfo'] = $this->sanitize->feedinfo;
 				unset($this->sanitize->feedinfo);
@@ -5190,6 +5195,7 @@ class SimplePie_Sanitize
 		
 		if ($raw_url)
 		{
+			$data = rawurlencode(rawurldecode($data));
 			return SimplePie_Misc::absolutize_url($data, $xmlbase);
 		}
 		else
