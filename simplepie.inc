@@ -365,7 +365,7 @@ EOT;
 			{
 				$parsed_feed_url = parse_url($this->rss_url);
 				// Decide whether to enable caching
-				if ($this->cache && !empty($parsed_feed_url['scheme']))
+				if ($this->enable_cache && !empty($parsed_feed_url['scheme']))
 				{
 					$cache = new $this->cache_class($this->cache_location, call_user_func($this->cache_name_type, $this->rss_url), 'spc');
 				}
@@ -5204,7 +5204,6 @@ class SimplePie_Sanitize
 		
 		if ($raw_url)
 		{
-			$data = rawurlencode(rawurldecode($data));
 			return SimplePie_Misc::absolutize_url($data, $xmlbase);
 		}
 		else
