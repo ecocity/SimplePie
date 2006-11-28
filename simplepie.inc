@@ -363,8 +363,9 @@ EOT;
 			
 			if (!empty($this->rss_url))
 			{
+				$parsed_feed_url = parse_url($this->rss_url);
 				// Decide whether to enable caching
-				if ($this->enable_cache && preg_match('/^http(s)?:\/\//i', $this->rss_url))
+				if ($this->cache && !empty($parsed_feed_url['scheme']))
 				{
 					$cache = new $this->cache_class($this->cache_location, call_user_func($this->cache_name_type, $this->rss_url), 'spc');
 				}
@@ -2549,10 +2550,15 @@ class SimplePie_Misc
 							}
 							else
 							{
-								if (preg_match('/^(.+)(\/|$)/msiU', $input, $match))
+								if (preg_match('/^(.+)(\/|$)/sU', $input, $match))
 								{
 									$target['path'] .= $match[1];
 									$input = substr_replace($input, '', 0, strlen($match[1]));
+								}
+								else
+								{
+									// We've ended up in a recursive loop, so do what we otherwise never will: return false.
+									return false;
 								}
 							}
 						}
@@ -2584,7 +2590,8 @@ class SimplePie_Misc
 			}
 			else
 			{
-				return false;
+				// No base URL, just return the relative URL
+				$target = $relative;
 			}
 			$return = '';
 			if (!empty($target['scheme']))
@@ -5113,7 +5120,11 @@ class SimplePie_Sanitize
 		{
 			foreach ($this->strip_htmltags as $tag)
 			{
-				$data = preg_replace_callback("/<($tag)((\s*((\w+:)?\w+)(\s*=\s*(\"([^\"]*)\"|'([^']*)'|(.*)))?)*)\s*(\/>|>(.*)<\/($tag)((\s*((\w+:)?\w+)(\s*=\s*(\"([^\"]*)\"|'([^']*)'|(.*)))?)*)\s*>)/msiU", array(&$this, 'do_strip_htmltags'), $data);
+				$pcre = "/<($tag)((?:\s*(?:(?:\w+:)?\w+)(?:\s*=\s*(?:\"(?:[^\"]*)\"|'(?:[^']*)'|(?:[a-z0-9\-._:]*)))?)*)\s*(\/>|>(.*)<\/($tag)((?:\s*(?:(?:\w+:)?\w+)(?:\s*=\s*(?:\"(?:[^\"]*)\"|'(?:[^']*)'|(?:[a-z0-9\-._:]*)))?)*)\s*>)/si";
+				while (preg_match($pcre, $data))
+				{
+					$data = preg_replace_callback($pcre, array(&$this, 'do_strip_htmltags'), $data);
+				}
 			}
 		}
 
@@ -5137,24 +5148,22 @@ class SimplePie_Sanitize
 	{
 		if ($this->encode_instead_of_strip)
 		{
-			if (isset($match[12]) && !in_array(strtolower($match[1]), array('script', 'style')))
+			if (isset($match[4]) && !in_array(strtolower($match[1]), array('script', 'style')))
 			{
-				return "&lt;$match[1]$match[2]&gt;$match[12]&lt;/$match[1]&gt;";
-			}
-			else if (isset($match[12]))
-			{
-				return "&lt;$match[1]$match[2]&gt;&lt;/$match[1]&gt;";
+				$match[1] = SimplePie_Misc::change_encoding(htmlspecialchars($match[1], ENT_COMPAT, 'UTF-8'), 'UTF-8', $this->input_encoding);
+				$match[2] = SimplePie_Misc::change_encoding(htmlspecialchars($match[2], ENT_COMPAT, 'UTF-8'), 'UTF-8', $this->input_encoding);
+				return "&lt;$match[1]$match[2]&gt;$match[4]&lt;/$match[1]&gt;";
 			}
 			else
 			{
-				return "&lt;$match[1]$match[2]/&gt;";
+				return SimplePie_Misc::change_encoding(htmlspecialchars($match[0], ENT_COMPAT, 'UTF-8'), 'UTF-8', $this->input_encoding);
 			}
 		}
 		else
 		{
-			if (isset($match[12]) && !in_array(strtolower($match[1]), array('script', 'style')))
+			if (isset($match[4]) && !in_array(strtolower($match[1]), array('script', 'style')))
 			{
-				return $match[12];
+				return $match[4];
 			}
 			else
 			{
