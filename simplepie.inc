@@ -26,7 +26,7 @@ class SimplePie
 	// SimplePie Info
 	var $name = 'SimplePie';
 	var $version = '1.0 b3.3';
-	var $build = '20061212';
+	var $build = '20061215';
 	var $url = 'http://simplepie.org/';
 	var $useragent;
 	var $linkback;
@@ -702,7 +702,7 @@ EOT;
 				$headers = $file->headers();
 				$file->close();
 
-				if ($headers['status']['code'] == 200)
+				if ($file->success && $headers['status']['code'] == 200)
 				{
 					return $favicon;
 				}
