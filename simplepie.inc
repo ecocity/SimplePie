@@ -5,7 +5,7 @@ A PHP-Based RSS and Atom Feed Framework
 Takes the hard work out of managing a complete RSS/Atom solution.
 
 Version: "Lemon Meringue"
-Updated: 12 December 2006
+Updated: 18 December 2006
 Copyright: 2004-2006 Ryan Parman, Geoffrey Sneddon
 http://simplepie.org
 
@@ -26,7 +26,7 @@ class SimplePie
 	// SimplePie Info
 	var $name = 'SimplePie';
 	var $version = '1.0 b3.3';
-	var $build = '20061215';
+	var $build = '20061218';
 	var $url = 'http://simplepie.org/';
 	var $useragent;
 	var $linkback;
@@ -2783,6 +2783,9 @@ class SimplePie_Misc
 	 * Modified by Geoffrey Sneddon 2006-11-19 to remove functionality
 	 * to choose what the replace string is, and to use a variable for
 	 * the output instead of PHP's output buffer
+	 *
+	 * Modified by Geoffrey Sneddon 2006-12-16 to use preg_match_all(),
+	 * so the regular expression is only run once
 	 */
 	function utf8_bad_replace($str)
 	{
@@ -2797,13 +2800,15 @@ class SimplePie_Misc
 		 '|\xF4[\x80-\x8F][\x80-\xBF]{2}' .			# plane 16
 		 '|(.{1}))';								# invalid byte
 		$output = '';
-		while (preg_match('/' . $UTF8_BAD . '/S', $str, $matches))
+		if (preg_match_all('/' . $UTF8_BAD . '/S', $str, $matches, PREG_SET_ORDER))
 		{
-			if (!isset($matches[2]))
+			foreach ($matches as $match)
 			{
-				$output .= $matches[0];
+				if (!isset($match[2]))
+				{
+					$output .= $match[0];
+				}
 			}
-			$str = substr($str, strlen($matches[0]));
 		}
 		return $output;
 	}
