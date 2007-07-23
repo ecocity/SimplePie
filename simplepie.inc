@@ -51,13 +51,13 @@ define('SIMPLEPIE_NAME', 'SimplePie');
 /**
  * SimplePie Version
  */
-define('SIMPLEPIE_VERSION', 'Razzleberry++');
+define('SIMPLEPIE_VERSION', '1.0.1');
 
 /**
  * SimplePie Build
  * @todo Hardcode for release (there's no need to have to call SimplePie_Misc::parse_date() only every load of simplepie.inc)
  */
-define('SIMPLEPIE_BUILD', gmdate('YmdHis', SimplePie_Misc::parse_date(substr('$Date:2007-07-15 16:52:28 -0700 (Sun, 15 Jul 2007) $', 7, 25))));
+define('SIMPLEPIE_BUILD', 20070719221955);
 
 /**
  * SimplePie Website URL
