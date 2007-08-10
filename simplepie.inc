@@ -7859,6 +7859,61 @@ class SimplePie_Cache_MySQL extends SimplePie_Cache_DB
 
 	function load()
 	{
+		if ($this->mysql && ($query = mysql_query('SELECT `items`, `data` FROM `' . $this->options['prefix'] . 'cache_data` WHERE `id` = \'' . mysql_real_escape_string($this->id) . "'", $this->mysql)) && ($row = mysql_fetch_row($query)))
+		{
+			$data = unserialize($data);
+			
+			if (isset($this->options['items']))
+			{
+				$items = (int) $this->options['items'];
+			}
+			else
+			{
+				$items = (int) $row[0];
+			}
+			
+			if ($items > 0)
+			{
+				$query2 = mysql_query('SELECT `data` FROM `' . $this->options['prefix'] . 'items` WHERE `id` = \'' . mysql_real_escape_string($this->id) . '\' ORDER BY `posted` DESC LIMIT ' . $items, $this->mysql);
+			}
+			elseif ($items < 0)
+			{
+				$query2 = mysql_query('SELECT `data` FROM `' . $this->options['prefix'] . 'items` WHERE `id` = \'' . mysql_real_escape_string($this->id) . '\' ORDER BY `posted` DESC', $this->mysql);
+			}
+			
+			if (!empty($query2))
+			{
+				if (isset($data['child'][SIMPLEPIE_NAMESPACE_ATOM_10]['feed'][0]))
+				{
+					$channel =& $data['child'][SIMPLEPIE_NAMESPACE_ATOM_10]['feed'][0];
+				}
+				elseif (isset($data['child'][SIMPLEPIE_NAMESPACE_ATOM_03]['feed'][0]))
+				{
+					$channel =& $data['child'][SIMPLEPIE_NAMESPACE_ATOM_03]['feed'][0];
+				}
+				elseif (isset($data['child']['']['rss'][0]['child']['']['channel'][0]))
+				{
+					$channel =& $data['child'][SIMPLEPIE_NAMESPACE_RDF]['RDF'][0];
+				}
+				elseif (isset($data['child']['']['rss'][0]['child']['']['channel'][0]))
+				{
+					$channel =& $data['child']['']['rss'][0]['child']['']['channel'][0];
+				}
+				else
+				{
+					$channel = null;
+				}
+				
+				if ($channel !== null)
+				{
+					while ($row = mysql_fetch_row($query2))
+					{
+						$channel['child'][SIMPLEPIE_NAMESPACE_ATOM_10]['entry'][0] = unserialize($row[0]);
+					}
+				}
+			}
+			return $data;
+		}
 		return false;
 	}
 
