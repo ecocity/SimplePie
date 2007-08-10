@@ -7766,12 +7766,12 @@ class SimplePie_Cache_MySQL extends SimplePie_Cache_DB
 			mysql_select_db(ltrim($mysql_location->get_path(), '/'));
 			mysql_query('SET NAMES utf8');
 			mysql_query('SET CHARACTER_SET utf8');
+			$this->id = $name . $extension;
+			$this->options = SimplePie_Misc::parse_str($mysql_location->get_query());
 			if (!isset($this->options['prefix']))
 			{
 				$this->options['prefix'] = '';
 			}
-			$this->id = $name . $extension;
-			$this->options = SimplePie_Misc::parse_str($mysql_location->get_query());
 		}
 	}
 
@@ -7861,7 +7861,7 @@ class SimplePie_Cache_MySQL extends SimplePie_Cache_DB
 	{
 		if ($this->mysql && ($query = mysql_query('SELECT `items`, `data` FROM `' . $this->options['prefix'] . 'cache_data` WHERE `id` = \'' . mysql_real_escape_string($this->id) . "'", $this->mysql)) && ($row = mysql_fetch_row($query)))
 		{
-			$data = unserialize($data);
+			$data = unserialize($row[1]);
 			
 			if (isset($this->options['items']))
 			{
