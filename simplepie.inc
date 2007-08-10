@@ -7768,19 +7768,19 @@ class SimplePie_Cache_MySQL extends SimplePie_Cache_DB
 			mysql_select_db(ltrim($mysql_location->get_path(), '/'));
 			mysql_query('SET NAMES utf8');
 			mysql_query('SET CHARACTER_SET utf8');
+			if (!isset($this->options['prefix']))
+			{
+				$this->options['prefix'] = '';
+			}
+			$this->id = $name . $extension;
+			$this->options = SimplePie_Misc::parse_str($mysql_location->get_query());
 		}
-		$this->id = $name . $extension;
-		$this->options = SimplePie_Misc::parse_str($mysql_location->get_query());
 	}
 
 	function save($data)
 	{
 		if ($this->mysql)
 		{
-			if (!isset($this->options['prefix']))
-			{
-				$this->options['prefix'] = '';
-			}
 			$feed_id = "'" . mysql_real_escape_string($this->id) . "'";
 			
 			if (is_a($data, 'SimplePie'))
@@ -7890,7 +7890,14 @@ class SimplePie_Cache_MySQL extends SimplePie_Cache_DB
 
 	function unlink()
 	{
-		return false;
+		if ($this->mysql && ($query = mysql_query('DELETE FROM `' . $this->options['prefix'] . 'cache_data` WHERE `id` = \'' . mysql_real_escape_string($this->id) . "'", $this->mysql)) && ($query2 = mysql_query('DELETE FROM `' . $this->options['prefix'] . 'items` WHERE `feed_id` = \'' . mysql_real_escape_string($this->id) . "'", $this->mysql)) && (mysql_affected_rows($query) || mysql_affected_rows($query2)))
+		{
+			return true;
+		}
+		else
+		{
+			return false;
+		}
 	}
 }
 
