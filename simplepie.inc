@@ -8289,7 +8289,7 @@ class SimplePie_Misc
 	 */
 	function utf8_bad_replace($str)
 	{
-		if (function_exists('iconv') && ($return = @iconv('UTF-8', 'UTF-8//IGNORE', $str))
+		if (function_exists('iconv') && ($return = @iconv('UTF-8', 'UTF-8//IGNORE', $str)))
 		{
 			return $return;
 		}
