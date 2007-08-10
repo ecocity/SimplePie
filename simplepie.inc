@@ -7680,21 +7680,19 @@ class SimplePie_Cache_DB
 				}
 			}
 			
-			$type = $data->get_type();
-			
-			if ($type & SIMPLEPIE_TYPE_ATOM_10)
+			if (isset($data->data['child'][SIMPLEPIE_NAMESPACE_ATOM_10]['feed'][0]))
 			{
 				$channel =& $data->data['child'][SIMPLEPIE_NAMESPACE_ATOM_10]['feed'][0];
 			}
-			elseif ($type & SIMPLEPIE_TYPE_ATOM_03)
+			elseif (isset($data->data['child'][SIMPLEPIE_NAMESPACE_ATOM_03]['feed'][0]))
 			{
 				$channel =& $data->data['child'][SIMPLEPIE_NAMESPACE_ATOM_03]['feed'][0];
 			}
-			elseif ($type & SIMPLEPIE_TYPE_RSS_RDF)
+			elseif (isset($data->data['child']['']['rss'][0]['child']['']['channel'][0]))
 			{
 				$channel =& $data->data['child'][SIMPLEPIE_NAMESPACE_RDF]['RDF'][0];
 			}
-			elseif ($type & SIMPLEPIE_TYPE_RSS_SYNDICATION && $data->data['child']['']['rss'][0]['child']['']['channel'][0])
+			elseif (isset($data->data['child']['']['rss'][0]['child']['']['channel'][0]))
 			{
 				$channel =& $data->data['child']['']['rss'][0]['child']['']['channel'][0];
 			}
