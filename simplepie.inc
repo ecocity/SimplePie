@@ -33,7 +33,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  * @package SimplePie
- * @version "Blackberry"
+ * @version "Blackberry-DB"
  * @copyright 2004-2007 Ryan Parman, Geoffrey Sneddon
  * @author Ryan Parman
  * @author Geoffrey Sneddon
@@ -51,7 +51,7 @@ define('SIMPLEPIE_NAME', 'SimplePie');
 /**
  * SimplePie Version
  */
-define('SIMPLEPIE_VERSION', 'Blackberry');
+define('SIMPLEPIE_VERSION', 'Blackberry-DB');
 
 /**
  * SimplePie Build
