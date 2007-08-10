@@ -7866,12 +7866,26 @@ class SimplePie_Cache_MySQL extends SimplePie_Cache_DB
 
 	function mtime()
 	{
-		return false;
+		if ($this->mysql && ($query = mysql_query('SELECT `mtime` FROM `' . $this->options['prefix'] . 'cache_data` WHERE `id` = \'' . mysql_real_escape_string($this->id) . "'", $this->mysql)) && ($row = mysql_fetch_row($query)))
+		{
+			return $row[0];
+		}
+		else
+		{
+			return false;
+		}
 	}
 
 	function touch()
 	{
-		return false;
+		if ($this->mysql && ($query = mysql_query('UPDATE `' . $this->options['prefix'] . 'cache_data` SET `mtime` = ' . time() . ' WHERE `id` = \'' . mysql_real_escape_string($this->id) . "'", $this->mysql)) && mysql_affected_rows($query))
+		{
+			return true;
+		}
+		else
+		{
+			return false;
+		}
 	}
 
 	function unlink()
