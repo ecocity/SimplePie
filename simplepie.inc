@@ -7795,9 +7795,20 @@ class SimplePie_Cache_MySQL extends SimplePie_Cache_DB
 				{
 					if (mysql_num_rows($query))
 					{
-						if (!mysql_query('UPDATE `' . $this->options['prefix'] . 'cache_data` SET `items` = ' . count($prepared[1]) . ', `data` = \'' . mysql_real_escape_string($prepared[0]) . '\', `mtime` = ' . time() . ' WHERE `id` = ' . $feed_id, $this->mysql))
+						$items = count($prepared[1]);
+						if ($items)
 						{
-							return false;
+							if (!mysql_query('UPDATE `' . $this->options['prefix'] . 'cache_data` SET `items` = ' . $items . ', `data` = \'' . mysql_real_escape_string($prepared[0]) . '\', `mtime` = ' . time() . ' WHERE `id` = ' . $feed_id, $this->mysql))
+							{
+								return false;
+							}
+						}
+						else
+						{
+							if (!mysql_query('UPDATE `' . $this->options['prefix'] . 'cache_data` SET `data` = \'' . mysql_real_escape_string($prepared[0]) . '\', `mtime` = ' . time() . ' WHERE `id` = ' . $feed_id, $this->mysql))
+							{
+								return false;
+							}
 						}
 					}
 					elseif (!mysql_query('INSERT INTO `' . $this->options['prefix'] . 'cache_data` (`id`, `items`, `data`, `mtime`) VALUES(\'' . mysql_real_escape_string($this->id) . '\', ' . count($prepared[1]) . ', \'' . mysql_real_escape_string($prepared[0]) . '\', ' . time() . ')', $this->mysql))
