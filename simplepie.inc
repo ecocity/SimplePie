@@ -7943,7 +7943,7 @@ class SimplePie_Cache_MySQL extends SimplePie_Cache_DB
 
 	function unlink()
 	{
-		if ($this->mysql && ($query = mysql_query('DELETE FROM `' . $this->options['prefix'] . 'cache_data` WHERE `id` = \'' . mysql_real_escape_string($this->id) . "'", $this->mysql)) && ($query2 = mysql_query('DELETE FROM `' . $this->options['prefix'] . 'items` WHERE `feed_id` = \'' . mysql_real_escape_string($this->id) . "'", $this->mysql)) && (mysql_affected_rows($query) || mysql_affected_rows($query2)))
+		if ($this->mysql && ($query = mysql_query('DELETE FROM `' . $this->options['prefix'] . 'cache_data` WHERE `id` = \'' . mysql_real_escape_string($this->id) . "'", $this->mysql)) && ($query2 = mysql_query('DELETE FROM `' . $this->options['prefix'] . 'items` WHERE `feed_id` = \'' . mysql_real_escape_string($this->id) . "'", $this->mysql)))
 		{
 			return true;
 		}
