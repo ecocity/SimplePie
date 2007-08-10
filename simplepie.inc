@@ -7688,7 +7688,7 @@ class SimplePie_Cache_DB
 			{
 				$channel =& $data->data['child'][SIMPLEPIE_NAMESPACE_ATOM_03]['feed'][0];
 			}
-			elseif (isset($data->data['child']['']['rss'][0]['child']['']['channel'][0]))
+			elseif (isset($data->data['child'][SIMPLEPIE_NAMESPACE_RDF]['RDF'][0]))
 			{
 				$channel =& $data->data['child'][SIMPLEPIE_NAMESPACE_RDF]['RDF'][0];
 			}
@@ -7825,7 +7825,12 @@ class SimplePie_Cache_MySQL extends SimplePie_Cache_DB
 							
 							foreach ($new_ids as $new_id)
 							{
-								if (!mysql_query('INSERT INTO `' . $this->options['prefix'] . 'items` (`feed_id`, `id`, `data`) VALUES(' . $feed_id . ', \'' . mysql_real_escape_string($new_id) . '\', \'' . mysql_real_escape_string(serialize($prepared[1][$new_id]->data)) . '\')', $this->mysql))
+								if (!($date = $prepared[1][$new_id]->get_date('U')))
+								{
+									$date = time();
+								}
+								
+								if (!mysql_query('INSERT INTO `' . $this->options['prefix'] . 'items` (`feed_id`, `id`, `data`, `posted`) VALUES(' . $feed_id . ', \'' . mysql_real_escape_string($new_id) . '\', \'' . mysql_real_escape_string(serialize($prepared[1][$new_id]->data)) . '\', ' . $date . ')', $this->mysql))
 								{
 									return false;
 								}
@@ -7874,41 +7879,41 @@ class SimplePie_Cache_MySQL extends SimplePie_Cache_DB
 			
 			if ($items > 0)
 			{
-				$query2 = mysql_query('SELECT `data` FROM `' . $this->options['prefix'] . 'items` WHERE `id` = \'' . mysql_real_escape_string($this->id) . '\' ORDER BY `posted` DESC LIMIT ' . $items, $this->mysql);
+				$query2 = mysql_query('SELECT `data` FROM `' . $this->options['prefix'] . 'items` WHERE `feed_id` = \'' . mysql_real_escape_string($this->id) . '\' ORDER BY `posted` DESC LIMIT ' . $items, $this->mysql);
 			}
 			elseif ($items < 0)
 			{
-				$query2 = mysql_query('SELECT `data` FROM `' . $this->options['prefix'] . 'items` WHERE `id` = \'' . mysql_real_escape_string($this->id) . '\' ORDER BY `posted` DESC', $this->mysql);
+				$query2 = mysql_query('SELECT `data` FROM `' . $this->options['prefix'] . 'items` WHERE `feed_id` = \'' . mysql_real_escape_string($this->id) . '\' ORDER BY `posted` DESC', $this->mysql);
 			}
 			
 			if (!empty($query2))
 			{
 				if (isset($data['child'][SIMPLEPIE_NAMESPACE_ATOM_10]['feed'][0]))
 				{
-					$channel =& $data['child'][SIMPLEPIE_NAMESPACE_ATOM_10]['feed'][0];
+					$feed =& $data['child'][SIMPLEPIE_NAMESPACE_ATOM_10]['feed'][0];
 				}
 				elseif (isset($data['child'][SIMPLEPIE_NAMESPACE_ATOM_03]['feed'][0]))
 				{
-					$channel =& $data['child'][SIMPLEPIE_NAMESPACE_ATOM_03]['feed'][0];
+					$feed =& $data['child'][SIMPLEPIE_NAMESPACE_ATOM_03]['feed'][0];
 				}
-				elseif (isset($data['child']['']['rss'][0]['child']['']['channel'][0]))
+				elseif (isset($data['child'][SIMPLEPIE_NAMESPACE_RDF]['RDF'][0]))
 				{
-					$channel =& $data['child'][SIMPLEPIE_NAMESPACE_RDF]['RDF'][0];
+					$feed =& $data['child'][SIMPLEPIE_NAMESPACE_RDF]['RDF'][0];
 				}
-				elseif (isset($data['child']['']['rss'][0]['child']['']['channel'][0]))
+				elseif (isset($data['child']['']['rss'][0]))
 				{
-					$channel =& $data['child']['']['rss'][0]['child']['']['channel'][0];
+					$feed =& $data['child']['']['rss'][0];
 				}
 				else
 				{
-					$channel = null;
+					$feed = null;
 				}
 				
-				if ($channel !== null)
+				if ($feed !== null)
 				{
 					while ($row = mysql_fetch_row($query2))
 					{
-						$channel['child'][SIMPLEPIE_NAMESPACE_ATOM_10]['entry'][0] = unserialize($row[0]);
+						$feed['child'][SIMPLEPIE_NAMESPACE_ATOM_10]['entry'][] = unserialize($row[0]);
 					}
 				}
 			}
