@@ -7797,12 +7797,12 @@ class SimplePie_Cache_MySQL extends SimplePie_Cache_DB
 				{
 					if (mysql_num_rows($query))
 					{
-						if (!mysql_query('UPDATE `' . $this->options['prefix'] . 'cache_data` SET `is_feed` = 1, `data` = \'' . mysql_real_escape_string($prepared[0]) . '\', `mtime` = ' . time() . ' WHERE `id` = ' . $feed_id, $this->mysql))
+						if (!mysql_query('UPDATE `' . $this->options['prefix'] . 'cache_data` SET `items` = ' . count($prepared[1]) . ', `data` = \'' . mysql_real_escape_string($prepared[0]) . '\', `mtime` = ' . time() . ' WHERE `id` = ' . $feed_id, $this->mysql))
 						{
 							return false;
 						}
 					}
-					elseif (!mysql_query('INSERT INTO `' . $this->options['prefix'] . 'cache_data` (`id`, `is_feed`, `data`, `mtime`) VALUES(\'' . mysql_real_escape_string($this->id) . '\', 1, \'' . mysql_real_escape_string($prepared[0]) . '\', ' . time() . ')', $this->mysql))
+					elseif (!mysql_query('INSERT INTO `' . $this->options['prefix'] . 'cache_data` (`id`, `items`, `data`, `mtime`) VALUES(\'' . mysql_real_escape_string($this->id) . '\', ' . count($prepared[1]) . ', \'' . mysql_real_escape_string($prepared[0]) . '\', ' . time() . ')', $this->mysql))
 					{
 						return false;
 					}
@@ -7845,12 +7845,12 @@ class SimplePie_Cache_MySQL extends SimplePie_Cache_DB
 			{
 				if (mysql_num_rows($query))
 				{
-					if (mysql_query('UPDATE `' . $this->options['prefix'] . 'cache_data` SET `is_feed` = 0, `data` = \'' . mysql_real_escape_string(serialize($data)) . '\', `mtime` = ' . time() . ' WHERE `id` = ' . $feed_id, $this->mysql))
+					if (mysql_query('UPDATE `' . $this->options['prefix'] . 'cache_data` SET `items` = 0, `data` = \'' . mysql_real_escape_string(serialize($data)) . '\', `mtime` = ' . time() . ' WHERE `id` = ' . $feed_id, $this->mysql))
 					{
 						return true;
 					}
 				}
-				elseif (mysql_query('INSERT INTO `' . $this->options['prefix'] . 'cache_data` (`id`, `is_feed`, `data`, `mtime`) VALUES(\'' . mysql_real_escape_string($this->id) . '\', 0, \'' . mysql_real_escape_string(serialize($data)) . '\', ' . time() . ')', $this->mysql))
+				elseif (mysql_query('INSERT INTO `' . $this->options['prefix'] . 'cache_data` (`id`, `items`, `data`, `mtime`) VALUES(\'' . mysql_real_escape_string($this->id) . '\', 0, \'' . mysql_real_escape_string(serialize($data)) . '\', ' . time() . ')', $this->mysql))
 				{
 					return true;
 				}

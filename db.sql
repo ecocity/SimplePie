@@ -1,7 +1,7 @@
 /* SQLite */
 CREATE TABLE cache_data (
 	id TEXT NOT NULL,
-	is_feed TINYINT NOT NULL,
+	items SMALLINT NOT NULL,
 	data BLOB NOT NULL,
 	mtime INTEGER UNSIGNED NOT NULL
 );
@@ -18,7 +18,7 @@ CREATE TABLE items (
 /* MySQL */
 CREATE TABLE `cache_data` (
 	`id` TEXT CHARACTER SET utf8 NOT NULL,
-	`is_feed` TINYINT NOT NULL,
+	`items` SMALLINT NOT NULL,
 	`data` BLOB NOT NULL,
 	`mtime` INT UNSIGNED NOT NULL,
 	UNIQUE (
