@@ -7243,7 +7243,7 @@ class SimplePie_HTTP_Parser
 	 */
 	function http_version()
 	{
-		if (strpos($this->data, "\x0A") !== false && stripos($this->data, 'HTTP/') === 0)
+		if (strpos($this->data, "\x0A") !== false && substr($this->data, 0, 5) === 'HTTP/')
 		{
 			$len = strspn($this->data, '0123456789.', 5);
 			$this->http_version = substr($this->data, 5, $len);
@@ -8231,7 +8231,14 @@ class SimplePie_Misc
 
 		if ($file = $cache->load())
 		{
-			header('Content-type:' . $file['headers']['content-type']);
+			if (isset($file['headers']['content-type']))
+			{
+				header('Content-type:' . $file['headers']['content-type']);
+			}
+			else
+			{
+				header('Content-type: application/octet-stream');
+			}
 			header('Expires: ' . gmdate('D, d M Y H:i:s', time() + 604800) . ' GMT'); // 7 days
 			echo $file['body'];
 			exit;
