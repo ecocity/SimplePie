@@ -13,6 +13,7 @@ CREATE TABLE items (
 	data TEXT NOT NULL,
 	posted INTEGER UNSIGNED NOT NULL
 );
+CREATE INDEX feed_id ON items(feed_id);
 
 
 /* MySQL */
@@ -30,5 +31,8 @@ CREATE TABLE `items` (
 	`feed_id` TEXT CHARACTER SET utf8 NOT NULL,
 	`id` TEXT CHARACTER SET utf8 NOT NULL,
 	`data` TEXT CHARACTER SET utf8 NOT NULL,
-	`posted` INT UNSIGNED NOT NULL
+	`posted` INT UNSIGNED NOT NULL,
+	INDEX `feed_id` (
+		`feed_id`(125)
+	)
 );
