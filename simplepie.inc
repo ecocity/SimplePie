@@ -7662,10 +7662,10 @@ class SimplePie_Cache_DB
 	function prepare_simplepie_object_for_cache($data)
 	{
 		$items = $data->get_items();
+		$items_by_id = array();
+		
 		if (!empty($items))
 		{
-			$items_by_id = array();
-			
 			foreach ($items as $item)
 			{
 				$items_by_id[$item->get_id()] = $item;
