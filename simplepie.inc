@@ -7532,11 +7532,11 @@ class SimplePie_Cache
 				case 'mysql':
 					if (extension_loaded('mysql'))
 					{
-						return new SimplePie_Cache_MySQL($location, $filename, $extension, false);
+						return new SimplePie_Cache_MySQL($location, $filename, $extension);
 					}
 					elseif (extension_loaded('mysqli'))
 					{
-						return new SimplePie_Cache_MySQL($location, $filename, $extension, true);
+						return new SimplePie_Cache_MySQLi($location, $filename, $extension);
 					}
 					elseif (extension_loaded('pdo_mysql'))
 					{
@@ -7778,7 +7778,7 @@ class SimplePie_Cache_MySQL extends SimplePie_Cache_DB
 			$password = null;
 		}
 
-		if ($this->mysql = call_user_func($this->extension . 'connect', $server, $username, $password))
+		if ($this->mysql = mysql_connect($server, $username, $password))
 		{
 			$this->id = $name . $extension;
 			$this->options = SimplePie_Misc::parse_str($mysql_location->get_query());
@@ -7787,19 +7787,19 @@ class SimplePie_Cache_MySQL extends SimplePie_Cache_DB
 				$this->options['prefix'][0] = '';
 			}
 			
-			if (call_user_func($this->extension . 'select_db', ltrim($mysql_location->get_path(), '/'))
-				&& call_user_func($this->extension . 'query', 'SET NAMES utf8')
-				&& ($query = call_user_func($this->extension . 'unbuffered_query', 'SHOW TABLES')))
+			if (mysql_select_db(ltrim($mysql_location->get_path(), '/'))
+				&& mysql_query('SET NAMES utf8')
+				&& ($query = mysql_unbuffered_query('SHOW TABLES')))
 			{
 				$db = array();
-				while ($row = call_user_func($this->extension . 'fetch_row', $query))
+				while ($row = mysql_fetch_row($query))
 				{
 					$db[] = $row[0];
 				}
 				
 				if (!in_array($this->options['prefix'][0] . 'cache_data', $db))
 				{
-					if (!call_user_func($this->extension . 'query', 'CREATE TABLE `' . $this->options['prefix'][0] . 'cache_data` (`id` TEXT CHARACTER SET utf8 NOT NULL, `items` SMALLINT NOT NULL DEFAULT 0, `data` BLOB NOT NULL, `mtime` INT UNSIGNED NOT NULL, UNIQUE (`id`(125)))'))
+					if (!mysql_query('CREATE TABLE `' . $this->options['prefix'][0] . 'cache_data` (`id` TEXT CHARACTER SET utf8 NOT NULL, `items` SMALLINT NOT NULL DEFAULT 0, `data` BLOB NOT NULL, `mtime` INT UNSIGNED NOT NULL, UNIQUE (`id`(125)))'))
 					{
 						$this->mysql = null;
 					}
@@ -7807,7 +7807,7 @@ class SimplePie_Cache_MySQL extends SimplePie_Cache_DB
 				
 				if (!in_array($this->options['prefix'][0] . 'items', $db))
 				{
-					if (!call_user_func($this->extension . 'query', 'CREATE TABLE `' . $this->options['prefix'][0] . 'items` (`feed_id` TEXT CHARACTER SET utf8 NOT NULL, `id` TEXT CHARACTER SET utf8 NOT NULL, `data` TEXT CHARACTER SET utf8 NOT NULL, `posted` INT UNSIGNED NOT NULL, INDEX `feed_id` (`feed_id`(125)))'))
+					if (!mysql_query('CREATE TABLE `' . $this->options['prefix'][0] . 'items` (`feed_id` TEXT CHARACTER SET utf8 NOT NULL, `id` TEXT CHARACTER SET utf8 NOT NULL, `data` TEXT CHARACTER SET utf8 NOT NULL, `posted` INT UNSIGNED NOT NULL, INDEX `feed_id` (`feed_id`(125)))'))
 					{
 						$this->mysql = null;
 					}
@@ -7824,7 +7824,7 @@ class SimplePie_Cache_MySQL extends SimplePie_Cache_DB
 	{
 		if ($this->mysql)
 		{
-			$feed_id = "'" . call_user_func($this->extension . 'real_escape_string', $this->id) . "'";
+			$feed_id = "'" . mysql_real_escape_string($this->id) . "'";
 			
 			if (is_a($data, 'SimplePie'))
 			{
@@ -7836,26 +7836,26 @@ class SimplePie_Cache_MySQL extends SimplePie_Cache_DB
 				
 				$prepared = $this->prepare_simplepie_object_for_cache($data);
 				
-				if ($query = call_user_func($this->extension . 'query', 'SELECT `id` FROM `' . $this->options['prefix'][0] . 'cache_data` WHERE `id` = ' . $feed_id, $this->mysql))
+				if ($query = mysql_query('SELECT `id` FROM `' . $this->options['prefix'][0] . 'cache_data` WHERE `id` = ' . $feed_id, $this->mysql))
 				{
-					if (call_user_func($this->extension . 'num_rows', $query))
+					if (mysql_num_rows($query))
 					{
 						$items = count($prepared[1]);
 						if ($items)
 						{
-							$sql = 'UPDATE `' . $this->options['prefix'][0] . 'cache_data` SET `items` = ' . $items . ', `data` = \'' . call_user_func($this->extension . 'real_escape_string', $prepared[0]) . '\', `mtime` = ' . time() . ' WHERE `id` = ' . $feed_id;
+							$sql = 'UPDATE `' . $this->options['prefix'][0] . 'cache_data` SET `items` = ' . $items . ', `data` = \'' . mysql_real_escape_string($prepared[0]) . '\', `mtime` = ' . time() . ' WHERE `id` = ' . $feed_id;
 						}
 						else
 						{
-							$sql = 'UPDATE `' . $this->options['prefix'][0] . 'cache_data` SET `data` = \'' . call_user_func($this->extension . 'real_escape_string', $prepared[0]) . '\', `mtime` = ' . time() . ' WHERE `id` = ' . $feed_id;
+							$sql = 'UPDATE `' . $this->options['prefix'][0] . 'cache_data` SET `data` = \'' . mysql_real_escape_string($prepared[0]) . '\', `mtime` = ' . time() . ' WHERE `id` = ' . $feed_id;
 						}
 						
-						if (!call_user_func($this->extension . 'query', $sql, $this->mysql))
+						if (!mysql_query($sql, $this->mysql))
 						{
 							return false;
 						}
 					}
-					elseif (!call_user_func($this->extension . 'query', 'INSERT INTO `' . $this->options['prefix'][0] . 'cache_data` (`id`, `items`, `data`, `mtime`) VALUES(' . $feed_id . ', ' . count($prepared[1]) . ', \'' . call_user_func($this->extension . 'real_escape_string', $prepared[0]) . '\', ' . time() . ')', $this->mysql))
+					elseif (!mysql_query('INSERT INTO `' . $this->options['prefix'][0] . 'cache_data` (`id`, `items`, `data`, `mtime`) VALUES(' . $feed_id . ', ' . count($prepared[1]) . ', \'' . mysql_real_escape_string($prepared[0]) . '\', ' . time() . ')', $this->mysql))
 					{
 						return false;
 					}
@@ -7865,13 +7865,13 @@ class SimplePie_Cache_MySQL extends SimplePie_Cache_DB
 					{
 						foreach ($ids as $id)
 						{
-							$database_ids[] = call_user_func($this->extension . 'real_escape_string', $id);
+							$database_ids[] = mysql_real_escape_string($id);
 						}
 						
-						if ($query = call_user_func($this->extension . 'unbuffered_query', 'SELECT `id` FROM `' . $this->options['prefix'][0] . 'items` WHERE `id` = \'' . implode('\' OR `id` = \'', $database_ids) . '\' AND `feed_id` = ' . $feed_id, $this->mysql))
+						if ($query = mysql_unbuffered_query('SELECT `id` FROM `' . $this->options['prefix'][0] . 'items` WHERE `id` = \'' . implode('\' OR `id` = \'', $database_ids) . '\' AND `feed_id` = ' . $feed_id, $this->mysql))
 						{
 							$existing_ids = array();
-							while ($row = call_user_func($this->extension . 'fetch_row', $query))
+							while ($row = mysql_fetch_row($query))
 							{
 								$existing_ids[] = $row[0];
 							}
@@ -7885,7 +7885,7 @@ class SimplePie_Cache_MySQL extends SimplePie_Cache_DB
 									$date = time();
 								}
 								
-								if (!call_user_func($this->extension . 'query', 'INSERT INTO `' . $this->options['prefix'][0] . 'items` (`feed_id`, `id`, `data`, `posted`) VALUES(' . $feed_id . ', \'' . call_user_func($this->extension . 'real_escape_string', $new_id) . '\', \'' . call_user_func($this->extension . 'real_escape_string', serialize($prepared[1][$new_id]->data)) . '\', ' . $date . ')', $this->mysql))
+								if (!mysql_query('INSERT INTO `' . $this->options['prefix'][0] . 'items` (`feed_id`, `id`, `data`, `posted`) VALUES(' . $feed_id . ', \'' . mysql_real_escape_string($new_id) . '\', \'' . mysql_real_escape_string(serialize($prepared[1][$new_id]->data)) . '\', ' . $date . ')', $this->mysql))
 								{
 									return false;
 								}
@@ -7899,16 +7899,16 @@ class SimplePie_Cache_MySQL extends SimplePie_Cache_DB
 					}
 				}	
 			}
-			elseif ($query = call_user_func($this->extension . 'query', 'SELECT `id` FROM `' . $this->options['prefix'][0] . 'cache_data` WHERE `id` = ' . $feed_id, $this->mysql))
+			elseif ($query = mysql_query('SELECT `id` FROM `' . $this->options['prefix'][0] . 'cache_data` WHERE `id` = ' . $feed_id, $this->mysql))
 			{
-				if (call_user_func($this->extension . 'num_rows', $query))
+				if (mysql_num_rows($query))
 				{
-					if (call_user_func($this->extension . 'query', 'UPDATE `' . $this->options['prefix'][0] . 'cache_data` SET `items` = 0, `data` = \'' . call_user_func($this->extension . 'real_escape_string', serialize($data)) . '\', `mtime` = ' . time() . ' WHERE `id` = ' . $feed_id, $this->mysql))
+					if (mysql_query('UPDATE `' . $this->options['prefix'][0] . 'cache_data` SET `items` = 0, `data` = \'' . mysql_real_escape_string(serialize($data)) . '\', `mtime` = ' . time() . ' WHERE `id` = ' . $feed_id, $this->mysql))
 					{
 						return true;
 					}
 				}
-				elseif (call_user_func($this->extension . 'query', 'INSERT INTO `' . $this->options['prefix'][0] . 'cache_data` (`id`, `items`, `data`, `mtime`) VALUES(\'' . call_user_func($this->extension . 'real_escape_string', $this->id) . '\', 0, \'' . call_user_func($this->extension . 'real_escape_string', serialize($data)) . '\', ' . time() . ')', $this->mysql))
+				elseif (mysql_query('INSERT INTO `' . $this->options['prefix'][0] . 'cache_data` (`id`, `items`, `data`, `mtime`) VALUES(\'' . mysql_real_escape_string($this->id) . '\', 0, \'' . mysql_real_escape_string(serialize($data)) . '\', ' . time() . ')', $this->mysql))
 				{
 					return true;
 				}
@@ -7919,7 +7919,7 @@ class SimplePie_Cache_MySQL extends SimplePie_Cache_DB
 
 	function load()
 	{
-		if ($this->mysql && ($query = call_user_func($this->extension . 'query', 'SELECT `items`, `data` FROM `' . $this->options['prefix'][0] . 'cache_data` WHERE `id` = \'' . call_user_func($this->extension . 'real_escape_string', $this->id) . "'", $this->mysql)) && ($row = call_user_func($this->extension . 'fetch_row', $query)))
+		if ($this->mysql && ($query = mysql_query('SELECT `items`, `data` FROM `' . $this->options['prefix'][0] . 'cache_data` WHERE `id` = \'' . mysql_real_escape_string($this->id) . "'", $this->mysql)) && ($row = mysql_fetch_row($query)))
 		{
 			$data = unserialize($row[1]);
 			
@@ -7957,15 +7957,15 @@ class SimplePie_Cache_MySQL extends SimplePie_Cache_DB
 				
 				if ($feed !== null)
 				{
-					$sql = 'SELECT `data` FROM `' . $this->options['prefix'][0] . 'items` WHERE `feed_id` = \'' . call_user_func($this->extension . 'real_escape_string', $this->id) . '\' ORDER BY `posted` DESC';
+					$sql = 'SELECT `data` FROM `' . $this->options['prefix'][0] . 'items` WHERE `feed_id` = \'' . mysql_real_escape_string($this->id) . '\' ORDER BY `posted` DESC';
 					if ($items > 0)
 					{
 						$sql .= ' LIMIT ' . $items;
 					}
 					
-					if ($query = call_user_func($this->extension . 'unbuffered_query', $sql, $this->mysql))
+					if ($query = mysql_unbuffered_query($sql, $this->mysql))
 					{
-						while ($row = call_user_func($this->extension . 'fetch_row', $query))
+						while ($row = mysql_fetch_row($query))
 						{
 							$feed['child'][SIMPLEPIE_NAMESPACE_ATOM_10]['entry'][] = unserialize($row[0]);
 						}
@@ -7983,7 +7983,7 @@ class SimplePie_Cache_MySQL extends SimplePie_Cache_DB
 
 	function mtime()
 	{
-		if ($this->mysql && ($query = call_user_func($this->extension . 'query', 'SELECT `mtime` FROM `' . $this->options['prefix'][0] . 'cache_data` WHERE `id` = \'' . call_user_func($this->extension . 'real_escape_string', $this->id) . "'", $this->mysql)) && ($row = call_user_func($this->extension . 'fetch_row', $query)))
+		if ($this->mysql && ($query = mysql_query('SELECT `mtime` FROM `' . $this->options['prefix'][0] . 'cache_data` WHERE `id` = \'' . mysql_real_escape_string($this->id) . "'", $this->mysql)) && ($row = mysql_fetch_row($query)))
 		{
 			return $row[0];
 		}
@@ -7995,7 +7995,7 @@ class SimplePie_Cache_MySQL extends SimplePie_Cache_DB
 
 	function touch()
 	{
-		if ($this->mysql && ($query = call_user_func($this->extension . 'query', 'UPDATE `' . $this->options['prefix'][0] . 'cache_data` SET `mtime` = ' . time() . ' WHERE `id` = \'' . call_user_func($this->extension . 'real_escape_string', $this->id) . "'", $this->mysql)) && call_user_func($this->extension . 'affected_rows', $query))
+		if ($this->mysql && ($query = mysql_query('UPDATE `' . $this->options['prefix'][0] . 'cache_data` SET `mtime` = ' . time() . ' WHERE `id` = \'' . mysql_real_escape_string($this->id) . "'", $this->mysql)) && mysql_affected_rows($query))
 		{
 			return true;
 		}
@@ -8007,7 +8007,7 @@ class SimplePie_Cache_MySQL extends SimplePie_Cache_DB
 
 	function unlink()
 	{
-		if ($this->mysql && ($query = call_user_func($this->extension . 'query', 'DELETE FROM `' . $this->options['prefix'][0] . 'cache_data` WHERE `id` = \'' . call_user_func($this->extension . 'real_escape_string', $this->id) . "'", $this->mysql)) && ($query2 = call_user_func($this->extension . 'query', 'DELETE FROM `' . $this->options['prefix'][0] . 'items` WHERE `feed_id` = \'' . call_user_func($this->extension . 'real_escape_string', $this->id) . "'", $this->mysql)))
+		if ($this->mysql && ($query = mysql_query('DELETE FROM `' . $this->options['prefix'][0] . 'cache_data` WHERE `id` = \'' . mysql_real_escape_string($this->id) . "'", $this->mysql)) && ($query2 = mysql_query('DELETE FROM `' . $this->options['prefix'][0] . 'items` WHERE `feed_id` = \'' . mysql_real_escape_string($this->id) . "'", $this->mysql)))
 		{
 			return true;
 		}
