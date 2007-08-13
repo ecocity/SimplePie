@@ -7780,7 +7780,6 @@ class SimplePie_Cache_MySQL extends SimplePie_Cache_DB
 			
 			if (mysql_select_db(ltrim($mysql_location->get_path(), '/'))
 				&& mysql_query('SET NAMES utf8')
-				&& mysql_query('SET CHARACTER SET utf8')
 				&& ($query = mysql_unbuffered_query('SHOW TABLES')))
 			{
 				$db = array();
