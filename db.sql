@@ -1,7 +1,7 @@
 /* SQLite */
 CREATE TABLE cache_data (
 	id TEXT NOT NULL,
-	items SMALLINT NOT NULL,
+	items SMALLINT NOT NULL DEFAULT 0,
 	data BLOB NOT NULL,
 	mtime INTEGER UNSIGNED NOT NULL
 );
@@ -19,7 +19,7 @@ CREATE INDEX feed_id ON items(feed_id);
 /* MySQL */
 CREATE TABLE `cache_data` (
 	`id` TEXT CHARACTER SET utf8 NOT NULL,
-	`items` SMALLINT NOT NULL,
+	`items` SMALLINT NOT NULL DEFAULT 0,
 	`data` BLOB NOT NULL,
 	`mtime` INT UNSIGNED NOT NULL,
 	UNIQUE (
