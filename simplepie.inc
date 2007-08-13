@@ -7759,7 +7759,15 @@ class SimplePie_Cache_MySQL extends SimplePie_Cache_DB
 			}
 		}
 
-		list($username, $password) = explode(':', $mysql_location->get_userinfo());
+		if (strpos($mysql_location->get_userinfo(), ':') !== false)
+		{
+			list($username, $password) = explode(':', $mysql_location->get_userinfo(), 2);
+		}
+		else
+		{
+			$username = $mysql_location->get_userinfo();
+			$password = null;
+		}
 
 		if ($this->mysql = mysql_connect($server, $username, $password))
 		{
@@ -7803,12 +7811,9 @@ class SimplePie_Cache_MySQL extends SimplePie_Cache_DB
 								return false;
 							}
 						}
-						else
+						elseif (!mysql_query('UPDATE `' . $this->options['prefix'][0] . 'cache_data` SET `data` = \'' . mysql_real_escape_string($prepared[0]) . '\', `mtime` = ' . time() . ' WHERE `id` = ' . $feed_id, $this->mysql))
 						{
-							if (!mysql_query('UPDATE `' . $this->options['prefix'][0] . 'cache_data` SET `data` = \'' . mysql_real_escape_string($prepared[0]) . '\', `mtime` = ' . time() . ' WHERE `id` = ' . $feed_id, $this->mysql))
-							{
-								return false;
-							}
+							return false;
 						}
 					}
 					elseif (!mysql_query('INSERT INTO `' . $this->options['prefix'][0] . 'cache_data` (`id`, `items`, `data`, `mtime`) VALUES(\'' . mysql_real_escape_string($this->id) . '\', ' . count($prepared[1]) . ', \'' . mysql_real_escape_string($prepared[0]) . '\', ' . time() . ')', $this->mysql))
