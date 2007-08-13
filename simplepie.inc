@@ -7534,10 +7534,6 @@ class SimplePie_Cache
 					{
 						return new SimplePie_Cache_MySQL($location, $filename, $extension);
 					}
-					elseif (extension_loaded('mysqli'))
-					{
-						return new SimplePie_Cache_MySQLi($location, $filename, $extension);
-					}
 					elseif (extension_loaded('pdo_mysql'))
 					{
 						return new SimplePie_Cache_PDO($location, $filename, $extension);
@@ -7743,17 +7739,8 @@ class SimplePie_Cache_MySQL extends SimplePie_Cache_DB
 	var $options;
 	var $id;
 
-	function SimplePie_Cache_MySQL($mysql_location, $name, $extension, $mysqli = false)
+	function SimplePie_Cache_MySQL($mysql_location, $name, $extension)
 	{
-		if ($mysqli)
-		{
-			$this->extension = 'mysqli_';
-		}
-		else
-		{
-			$this->extension = 'mysql_';
-		}
-		
 		$host = $mysql_location->get_host();
 		if (stripos($host, 'unix(') === 0 && substr($host, -1) === ')')
 		{
