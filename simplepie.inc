@@ -7923,13 +7923,19 @@ class SimplePie_Cache_MySQL extends SimplePie_Cache_DB
 					$sql = 'SELECT `data` FROM `' . $this->options['prefix'][0] . 'items` WHERE `feed_id` = \'' . mysql_real_escape_string($this->id) . '\' ORDER BY `posted` DESC';
 					if ($items > 0)
 					{
-						$sql .= 'LIMIT ' . $items;
+						$sql .= ' LIMIT ' . $items;
 					}
-					$query = mysql_unbuffered_query($sql, $this->mysql);
 					
-					while ($row = mysql_fetch_row($query))
+					if ($query = mysql_unbuffered_query($sql, $this->mysql))
 					{
-						$feed['child'][SIMPLEPIE_NAMESPACE_ATOM_10]['entry'][] = unserialize($row[0]);
+						while ($row = mysql_fetch_row($query))
+						{
+							$feed['child'][SIMPLEPIE_NAMESPACE_ATOM_10]['entry'][] = unserialize($row[0]);
+						}
+					}
+					else
+					{
+						return false;
 					}
 				}
 			}
