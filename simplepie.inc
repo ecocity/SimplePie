@@ -7771,14 +7771,44 @@ class SimplePie_Cache_MySQL extends SimplePie_Cache_DB
 
 		if ($this->mysql = mysql_connect($server, $username, $password))
 		{
-			mysql_select_db(ltrim($mysql_location->get_path(), '/'));
-			mysql_query('SET NAMES utf8');
-			mysql_query('SET CHARACTER_SET utf8');
 			$this->id = $name . $extension;
 			$this->options = SimplePie_Misc::parse_str($mysql_location->get_query());
 			if (!isset($this->options['prefix'][0]))
 			{
 				$this->options['prefix'][0] = '';
+			}
+			
+			if (mysql_select_db(ltrim($mysql_location->get_path(), '/'))
+				&& mysql_query('SET NAMES utf8')
+				&& mysql_query('SET CHARACTER SET utf8')
+				&& ($query = mysql_unbuffered_query('SHOW TABLES')))
+			{
+				$db = array();
+				while ($row = mysql_fetch_row($query))
+				{
+					$db[] = $row[0];
+				}
+				
+				if (!in_array($this->options['prefix'][0] . 'cache_data', $db))
+				{
+					if (!mysql_query('CREATE TABLE `' . $this->options['prefix'][0] . 'cache_data` (`id` TEXT CHARACTER SET utf8 NOT NULL, `items` SMALLINT NOT NULL DEFAULT 0, `data` BLOB NOT NULL, `mtime` INT UNSIGNED NOT NULL, UNIQUE (`id`(125)))'))
+					{
+						$this->mysql = null;
+					}
+				}
+				
+				if (!in_array($this->options['prefix'][0] . 'items', $db))
+				{
+					if (!mysql_query('CREATE TABLE `' . $this->options['prefix'][0] . 'items` (`feed_id` TEXT CHARACTER SET utf8 NOT NULL, `id` TEXT CHARACTER SET utf8 NOT NULL, `data` TEXT CHARACTER SET utf8 NOT NULL, `posted` INT UNSIGNED NOT NULL, INDEX `feed_id` (`feed_id`(125)))'))
+					{
+						$this->mysql = null;
+					}
+				}
+			}
+			else
+			{
+				var_dump(mysql_error());
+				$this->mysql = null;
 			}
 		}
 	}
