@@ -7534,17 +7534,6 @@ class SimplePie_Cache
 					{
 						return new SimplePie_Cache_MySQL($location, $filename, $extension);
 					}
-					elseif (extension_loaded('pdo_mysql'))
-					{
-						return new SimplePie_Cache_PDO($location, $filename, $extension);
-					}
-					break;
-
-				case 'sqlite':
-					if (extension_loaded('pdo_sqlite'))
-					{
-						return new SimplePie_Cache_PDO($location, $filename, $extension);
-					}
 					break;
 
 				case '':
