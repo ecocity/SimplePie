@@ -260,7 +260,7 @@ define('SIMPLEPIE_UPPERCASE', 4);
 /**
  * PCRE for HTML attributes
  */
-define('SIMPLEPIE_PCRE_HTML_ATTRIBUTE', '((?:\s+(?:(?:[^\s:]+:)?[^\s:]+)(?:\s*=\s*(?:"(?:[^"]*)"|\'(?:[^\']*)\'|(?:[a-z0-9\-._:]*)))?)*)\s*');
+define('SIMPLEPIE_PCRE_HTML_ATTRIBUTE', '((?:[\x09\x0A\x0B\x0C\x0D]+[^\x09\x0A\x0B\x0C\x0D\x20\x2F\x3E][^\x09\x0A\x0B\x0C\x0D\x20\x2F\x3D\x3E]*(?:[\x09\x0A\x0B\x0C\x0D]*=[\x09\x0A\x0B\x0C\x0D]*(?:"(?:[^"]*)"|\'(?:[^\']*)\'|(?:[a-z0-9\-._:]*)))?)*)[\x09\x0A\x0B\x0C\x0D]*');
 
 /**
  * PCRE for XML attributes
@@ -450,6 +450,14 @@ class SimplePie
 	 * @access private
 	 */
 	var $force_fsockopen = false;
+
+	/**
+	 * @var bool Force the given data/URL to be treated as a feed no matter what
+	 * it appears like
+	 * @see SimplePie::force_feed()
+	 * @access private
+	 */
+	var $force_feed = false;
 
 	/**
 	 * @var bool Enable/Disable XML dump
@@ -778,6 +786,19 @@ class SimplePie
 			}
 			unset($this->data['ordered_items']);
 		}
+	}
+	
+	/**
+	 * Force the given data/URL to be treated as a feed no matter what it
+	 * appears like
+	 *
+	 * @access public
+	 * @since 1.1
+	 * @param bool $enable Force the given data/URL to be treated as a feed
+	 */
+	function force_feed($enable = false)
+	{
+		$this->force_feed = (bool) $enable;
 	}
 
 	/**
@@ -1695,33 +1716,36 @@ function embed_wmedia(width, height, link) {
 					}
 				}
 
-				// Check if the supplied URL is a feed, if it isn't, look for it.
-				$locate =& new $this->locator_class($file, $this->timeout, $this->useragent, $this->file_class, $this->max_checked_feeds);
-				if (!$locate->is_feed($file))
+				if (!$this->force_feed)
 				{
-					// We need to unset this so that if SimplePie::set_file() has been called that object is untouched
-					unset($file);
-					if ($file = $locate->find($this->autodiscovery))
+					// Check if the supplied URL is a feed, if it isn't, look for it.
+					$locate =& new $this->locator_class($file, $this->timeout, $this->useragent, $this->file_class, $this->max_checked_feeds);
+					if (!$locate->is_feed($file))
 					{
-						if ($cache)
+						// We need to unset this so that if SimplePie::set_file() has been called that object is untouched
+						unset($file);
+						if ($file = $locate->find($this->autodiscovery))
 						{
-							$this->data = array('url' => $this->feed_url, 'feed_url' => $file->url, 'build' => SIMPLEPIE_BUILD);
-							if (!$cache->save($this))
+							if ($cache)
 							{
-								trigger_error("$this->cache_location is not writeable", E_USER_WARNING);
+								$this->data = array('url' => $this->feed_url, 'feed_url' => $file->url, 'build' => SIMPLEPIE_BUILD);
+								if (!$cache->save($this))
+								{
+									trigger_error("$this->cache_location is not writeable", E_USER_WARNING);
+								}
+								$cache = call_user_func(array($this->cache_class, 'create'), $this->cache_location, call_user_func($this->cache_name_function, $file->url), 'spc');
 							}
-							$cache = call_user_func(array($this->cache_class, 'create'), $this->cache_location, call_user_func($this->cache_name_function, $file->url), 'spc');
+							$this->feed_url = $file->url;
 						}
-						$this->feed_url = $file->url;
+						else
+						{
+							$this->error = "A feed could not be found at $this->feed_url";
+							SimplePie_Misc::error($this->error, E_USER_NOTICE, __FILE__, __LINE__);
+							return false;
+						}
 					}
-					else
-					{
-						$this->error = "A feed could not be found at $this->feed_url";
-						SimplePie_Misc::error($this->error, E_USER_NOTICE, __FILE__, __LINE__);
-						return false;
-					}
+					$locate = null;
 				}
-				$locate = null;
 
 				$headers = $file->headers;
 				$data = $file->body;
@@ -1793,9 +1817,6 @@ function embed_wmedia(width, height, link) {
 			{
 				// Change the encoding to UTF-8 (as we always use UTF-8 internally)
 				$utf8_data = SimplePie_Misc::change_encoding($data, $encoding, 'UTF-8');
-	
-				// Strip illegal characters
-				$utf8_data = SimplePie_Misc::utf8_bad_replace($utf8_data);
 
 				// Create new parser
 				$parser =& new $this->parser_class();
@@ -1992,11 +2013,12 @@ function embed_wmedia(width, height, link) {
 
 			if ($this->cache && $this->favicon_handler)
 			{
-				$cache = call_user_func(array($this->cache_class, 'create'), $this->cache_location, call_user_func($this->cache_name_function, $favicon), 'spi');
+				$favicon_filename = call_user_func($this->cache_name_function, $favicon);
+				$cache = call_user_func(array($this->cache_class, 'create'), $this->cache_location, $favicon_filename, 'spi');
 
 				if ($cache->load())
 				{
-					return $this->sanitize($this->favicon_handler . rawurlencode($favicon), SIMPLEPIE_CONSTRUCT_IRI);
+					return $this->sanitize($this->favicon_handler . $favicon_filename, SIMPLEPIE_CONSTRUCT_IRI);
 				}
 				else
 				{
@@ -2009,7 +2031,7 @@ function embed_wmedia(width, height, link) {
 						{
 							if ($cache->save(array('headers' => $file->headers, 'body' => $file->body)))
 							{
-								return $this->sanitize($this->favicon_handler . rawurlencode($favicon), SIMPLEPIE_CONSTRUCT_IRI);
+								return $this->sanitize($this->favicon_handler . $favicon_filename, SIMPLEPIE_CONSTRUCT_IRI);
 							}
 							else
 							{
@@ -7681,7 +7703,7 @@ class SimplePie_File
 				{
 					$url_parts['port'] = 80;
 				}
-				$fp = fsockopen($url_parts['host'], $url_parts['port'], $errno, $errstr, $timeout);
+				$fp = @fsockopen($url_parts['host'], $url_parts['port'], $errno, $errstr, $timeout);
 				if (!$fp)
 				{
 					$this->error = 'fsockopen error: ' . $errstr;
@@ -8936,12 +8958,12 @@ class SimplePie_Misc
 	 * @param str $cache_class Name of the cache-handling class being used
 	 * in SimplePie.  Defaults to 'SimplePie_Cache', and should be left
 	 * as-is unless you've overloaded the class.
-	 * @param str $cache_name_function Function that converts the filename
-	 * for saving.  Defaults to 'md5'.
+	 * @param str $cache_name_function Obsolete. Exists for backwards
+	 * compatibility reasons only.
 	 */
 	function display_cached_file($identifier_url, $cache_location = './cache', $cache_extension = 'spc', $cache_class = 'SimplePie_Cache', $cache_name_function = 'md5')
 	{
-		$cache = call_user_func(array($cache_class, 'create'), $cache_location, call_user_func($cache_name_function, $identifier_url), $cache_extension);
+		$cache = call_user_func(array($cache_class, 'create'), $cache_location, $identifier_url, $cache_extension);
 
 		if ($file = $cache->load())
 		{
@@ -9120,6 +9142,20 @@ class SimplePie_Misc
 	{
 		$input = SimplePie_Misc::encoding($input);
 		$output = SimplePie_Misc::encoding($output);
+		
+		// We fail to fail on non US-ASCII bytes
+		if ($input === 'US-ASCII')
+		{
+			static $non_ascii_octects = '';
+			if (!$non_ascii_octects)
+			{
+				for ($i = 0x80; $i <= 0xFF; $i++)
+				{
+					$non_ascii_octects .= chr($i);
+				}
+			}
+			$data = substr($data, 0, strcspn($data, $non_ascii_octects));
+		}
 
 		if (function_exists('iconv') && ($return = @iconv($input, $output, $data)))
 		{
@@ -9131,7 +9167,7 @@ class SimplePie_Misc
 		}
 		elseif ($input == 'windows-1252' && $output == 'UTF-8')
 		{
-			return SimplePie_Misc::windows1252_to_utf8($data);
+			return SimplePie_Misc::windows_1252_to_utf8($data);
 		}
 		elseif ($input == 'UTF-8' && $output == 'windows-1252')
 		{
@@ -14452,7 +14488,7 @@ class SimplePie_Sanitize
 		{
 			if ($type & SIMPLEPIE_CONSTRUCT_MAYBE_HTML)
 			{
-				if (preg_match('/(&(#(x[0-9a-fA-F]+|[0-9]+)|[a-zA-Z0-9]+)|<\/(\w+)' . SIMPLEPIE_PCRE_HTML_ATTRIBUTE . '>)/', $data))
+				if (preg_match('/(&(#(x[0-9a-fA-F]+|[0-9]+)|[a-zA-Z0-9]+)|<\/[A-Za-z][^\x09\x0A\x0B\x0C\x0D\x20\x2F\x3E]*' . SIMPLEPIE_PCRE_HTML_ATTRIBUTE . '>)/', $data))
 				{
 					$type |= SIMPLEPIE_CONSTRUCT_HTML;
 				}
@@ -14507,9 +14543,7 @@ class SimplePie_Sanitize
 				{
 					foreach ($this->strip_attributes as $attrib)
 					{
-						$data = preg_replace('/ '. trim($attrib) .'=("|&quot;)(\w|\s|=|-|:|;|\/|\.|\?|&|,|#|!|\(|\)|\'|&apos;|<|>|\+|{|})*("|&quot;)/i', '', $data);
-						$data = preg_replace('/ '. trim($attrib) .'=(\'|&apos;)(\w|\s|=|-|:|;|\/|\.|\?|&|,|#|!|\(|\)|"|&quot;|<|>|\+|{|})*(\'|&apos;)/i', '', $data);
-						$data = preg_replace('/ '. trim($attrib) .'=(\w|\s|=|-|:|;|\/|\.|\?|&|,|#|!|\(|\)|\+|{|})*/i', '', $data);
+						$data = preg_replace('/<[A-Za-z][^\x09\x0A\x0B\x0C\x0D\x20\x2F\x3E]*' . SIMPLEPIE_PCRE_HTML_ATTRIBUTE . trim($attrib) . '(?:\s*=\s*(?:"(?:[^"]*)"|\'(?:[^\']*)\'|(?:[a-z0-9\-._:]*)))?' . SIMPLEPIE_PCRE_HTML_ATTRIBUTE . '>/', '', $data);
 					}
 				}
 
@@ -14528,27 +14562,30 @@ class SimplePie_Sanitize
 					{
 						if (isset($img['attribs']['src']['data']))
 						{
-							$image_url = $img['attribs']['src']['data'];
-							$cache = call_user_func(array($this->cache_class, 'create'), $this->cache_location, call_user_func($this->cache_name_function, $image_url), 'spi');
+							$image_url = call_user_func($this->cache_name_function, $img['attribs']['src']['data']);
+							$cache = call_user_func(array($this->cache_class, 'create'), $this->cache_location, $image_url, 'spi');
 
 							if ($cache->load())
 							{
-								$img['attribs']['src']['data'] = $this->image_handler . rawurlencode($img['attribs']['src']['data']);
+								$img['attribs']['src']['data'] = $this->image_handler . $image_url;
 								$data = str_replace($img['full'], SimplePie_Misc::element_implode($img), $data);
 							}
 							else
 							{
-								$file =& new $this->file_class($image_url, $this->timeout, 5, array('X-FORWARDED-FOR' => $_SERVER['REMOTE_ADDR']), $this->useragent, $this->force_fsockopen);
+								$file =& new $this->file_class($img['attribs']['src']['data'], $this->timeout, 5, array('X-FORWARDED-FOR' => $_SERVER['REMOTE_ADDR']), $this->useragent, $this->force_fsockopen);
 								$headers = $file->headers;
 
 								if ($file->success && ($file->status_code == 200 || ($file->status_code > 206 && $file->status_code < 300)))
 								{
-									if (!$cache->save(array('headers' => $file->headers, 'body' => $file->body)))
+									if ($cache->save(array('headers' => $file->headers, 'body' => $file->body)))
+									{
+										$img['attribs']['src']['data'] = $this->image_handler . $image_url;
+										$data = str_replace($img['full'], SimplePie_Misc::element_implode($img), $data);
+									}
+									else
 									{
 										trigger_error("$this->cache_location is not writeable", E_USER_WARNING);
 									}
-									$img['attribs']['src']['data'] = $this->image_handler . rawurlencode($img['attribs']['src']['data']);
-									$data = str_replace($img['full'], SimplePie_Misc::element_implode($img), $data);
 								}
 							}
 						}
