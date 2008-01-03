@@ -7348,9 +7348,9 @@ class SimplePie_Caption
 
 	function get_language()
 	{
-		if ($this->language !== null)
+		if ($this->lang !== null)
 		{
-			return $this->language;
+			return $this->lang;
 		}
 		else
 		{
