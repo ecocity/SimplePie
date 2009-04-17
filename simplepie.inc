@@ -1784,8 +1784,15 @@ function embed_wmedia(width, height, link) {
 					}
 				}
 			}
-			// We have an error, just set SimplePie::error to it and quit
-			$this->error = sprintf('XML error: %s at line %d, column %d', $parser->get_error_string(), $parser->get_current_line(), $parser->get_current_column());
+			if(isset($parser))
+			{
+				// We have an error, just set SimplePie_Misc::error to it and quit
+				$this->error = sprintf('XML error: %s at line %d, column %d', $parser->get_error_string(), $parser->get_current_line(), $parser->get_current_column());
+			}
+			else
+			{
+				$this->error = 'The data could not be converted to UTF-8';
+			}
 			SimplePie_Misc::error($this->error, E_USER_NOTICE, __FILE__, __LINE__);
 			return false;
 		}
